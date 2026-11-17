@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Professional Portfolio</title>
+<meta name="description" content="An interactive 3D portfolio: explore education, research, presentations, honors, leadership and awards in a virtual science office." />
+<meta name="theme-color" content="#0b0f1a" />
+<meta property="og:title" content="Professional Portfolio" />
+<meta property="og:description" content="Explore my research and achievements in a virtual science office." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0f1a'/%3E%3Cpath d='M32 10 52 22v20L32 54 12 42V22z' fill='none' stroke='%237ee7d1' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%23e6c27a'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body class="is-loading">
+
+<canvas id="scene" tabindex="0" aria-label="Interactive 3D office. Use the section buttons at the top, or press the question-mark key for keyboard shortcuts."></canvas>
+
+<!-- Loading screen -->
+<div id="preloader" role="status" aria-live="polite">
+  <div class="preloader-inner">
+    <div class="preloader-mark" aria-hidden="true">◈</div>
+    <h1 id="preloader-title">Building the office…</h1>
+    <div class="progress-track"><div id="progress-bar"></div></div>
+    <p id="progress-label">Starting…</p>
+  </div>
+</div>
+
+<!-- Top bar: brand, section navigation, controls -->
+<header id="topbar" class="topbar">
+  <button id="brand" class="brand" type="button" aria-label="Back to the overview">
+    <span id="brand-name" class="brand-name">Your Name</span>
+    <span id="brand-sub" class="brand-sub">Portfolio</span>
+  </button>
+  <nav id="nav" class="nav" aria-label="Portfolio sections"></nav>
+  <div id="hud" class="hud" role="toolbar" aria-label="View controls">
+    <button id="btn-tour" class="hud-btn wide" type="button" title="Guided tour (T)"><span aria-hidden="true">▶</span> Tour</button>
+    <button id="btn-index" class="hud-btn" type="button" title="All content (C)" aria-label="Show all content">☰</button>
+    <button id="btn-hints" class="hud-btn" type="button" title="Show / hide hotspots (H)" aria-pressed="true" aria-label="Toggle hotspots">✦</button>
+    <button id="btn-daynight" class="hud-btn" type="button" title="Day / night (N)" aria-label="Toggle day and night">🌙</button>
+    <button id="btn-sound" class="hud-btn" type="button" title="Sound on / off (M)" aria-label="Toggle sound">🔊</button>
+    <button id="btn-home" class="hud-btn" type="button" title="Reset view (R)" aria-label="Reset camera view">⌂</button>
+    <button id="btn-help" class="hud-btn" type="button" title="Help (?)" aria-label="Help and keyboard shortcuts">?</button>
+  </div>
+</header>
+
+<div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+<!-- Fade used when walking through the door between rooms -->
+<div id="roomfade" class="roomfade" aria-hidden="true"><p id="roomfade-label"></p></div>
+
+<!-- Side panel: section lists and item details -->
+<aside id="panel" class="panel" aria-labelledby="panel-title" aria-hidden="true" inert>
+  <div class="panel-bar">
+    <nav id="panel-crumbs" class="panel-crumbs" aria-label="Breadcrumb"></nav>
+    <button id="panel-close" class="icon-btn" type="button" aria-label="Close panel (Esc)">✕</button>
+  </div>
+  <div id="panel-scroll" class="panel-scroll"></div>
+</aside>
+
+<!-- Guided tour bar -->
+<div id="tourbar" class="tourbar" hidden>
+  <button id="tour-prev" class="icon-btn" type="button" aria-label="Previous stop">‹</button>
+  <div class="tour-text">
+    <div class="tour-count" id="tour-count">1 / 1</div>
+    <div class="tour-say" id="tour-say"></div>
+  </div>
+  <button id="tour-auto" class="icon-btn" type="button" aria-label="Autoplay" aria-pressed="false">⏵</button>
+  <button id="tour-next" class="icon-btn" type="button" aria-label="Next stop">›</button>
+  <button id="tour-exit" class="icon-btn subtle" type="button" aria-label="End tour">✕</button>
+</div>
+
+<!-- Image viewer -->
+<div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="Image viewer">
+  <div class="lb-tools">
+    <button id="lb-out" class="icon-btn" type="button" aria-label="Zoom out">−</button>
+    <button id="lb-in" class="icon-btn" type="button" aria-label="Zoom in">+</button>
+    <button id="lb-reset" class="icon-btn" type="button" aria-label="Reset zoom">1:1</button>
+    <button id="lb-close" class="icon-btn" type="button" aria-label="Close image (Esc)">✕</button>
+  </div>
+  <div id="lb-stage" class="lb-stage"><img id="lb-img" alt="" draggable="false" /></div>
+  <p id="lb-caption" class="lb-caption"></p>
+</div>
+
+<!-- Welcome card -->
+<div id="intro" class="intro" hidden>
+  <div class="intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-name">
+    <p class="eyebrow">Interactive portfolio</p>
+    <h2 id="intro-name" class="intro-name">Your Name</h2>
+    <p id="intro-headline" class="intro-headline"></p>
+    <p id="intro-tagline" class="intro-tagline"></p>
+    <div class="intro-actions">
+      <button id="intro-enter" class="btn primary" type="button">Enter the office</button>
+      <button id="intro-tour" class="btn" type="button">Take the guided tour</button>
+    </div>
+    <ul class="intro-hints" aria-label="How to explore">
+      <li><span aria-hidden="true">🖱️</span> Drag to look around, scroll to zoom</li>
+      <li><span aria-hidden="true">✦</span> Click the glowing dots and anything on the walls</li>
+      <li><span aria-hidden="true">⌨️</span> Press <kbd>?</kbd> for shortcuts</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Help -->
+<div id="help" class="help" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="help-card">
+    <button id="help-close" class="icon-btn" type="button" aria-label="Close help">✕</button>
+    <h2 id="help-title">Explore the rooms</h2>
+    <div class="help-grid">
+      <div><kbd>Drag</kbd> look around</div><div><kbd>Scroll</kbd> zoom</div>
+      <div><kbd>1</kbd>–<kbd>9</kbd> jump to a section</div><div><kbd>←</kbd> <kbd>→</kbd> previous / next item</div>
+      <div><kbd>T</kbd> guided tour</div><div><kbd>C</kbd> all content</div>
+      <div><kbd>N</kbd> day / night</div><div><kbd>H</kbd> hotspots</div>
+      <div><kbd>M</kbd> sound</div><div><kbd>R</kbd> reset view</div>
+      <div></div><div></div>
+      <div><kbd>Esc</kbd> close / go back</div><div><kbd>?</kbd> this help</div>
+    </div>
+    <p class="help-note">Every item has its own link, for example <code>#research-1</code> — copy the address bar to share it.</p>
+  </div>
+</div>
+
+<!-- Shown only when WebGL is unavailable: the panel doubles as a plain 2D site -->
+<div id="fallback" class="fallback" hidden>
+  <p><strong>The 3D view is not available in this browser.</strong> You can still browse everything below.</p>
+</div>
+
+<noscript><p class="noscript">This portfolio needs JavaScript. Please enable it to explore the 3D office.</p></noscript>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
+<script type="module" src="main.js"></script>
+
+<!-- Failsafe: explain problems on the loading screen instead of hanging silently -->
+<script>
+  (function () {
+    function fail(msg) {
+      var t = document.getElementById("preloader-title");
+      var l = document.getElementById("progress-label");
+      if (t) t.textContent = "Couldn't load the scene";
+      if (l) l.textContent = msg;
+    }
+    window.__loadFail = fail;
+    if (location.protocol === "file:") {
+      fail("This page was opened as a file. Run it with a local server (VS Code: right-click index.html → Open with Live Server).");
+    }
+    window.addEventListener("error", function (e) { fail("Error: " + (e.message || "open the browser console (F12) for details")); });
+    window.addEventListener("unhandledrejection", function (e) { fail("Error: " + ((e.reason && e.reason.message) || "open the browser console (F12) for details")); });
+    setTimeout(function () {
+      var p = document.getElementById("preloader");
+      if (p && !p.classList.contains("done")) fail("Still loading… press F12 and read the Console tab for red errors.");
+    }, 15000);
+  })();
+</script>
+</body>
+</html>
